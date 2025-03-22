@@ -118,7 +118,7 @@ export default function AgentHome() {
           </div>
         </div>
 
-        {hasAgents ? (
+        {account && hasAgents ? (
           // Agent Cards Grid - Create New Agent card removed
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {sampleAgents.map((agent) => (
