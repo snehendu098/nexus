@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { useRef, useEffect } from "react"
-import { HelpCircle } from "lucide-react"
-import ReactMarkdown from "react-markdown"
+import { useRef, useEffect } from "react";
+import { HelpCircle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface AgentDetailsFormProps {
-  name: string
-  description: string
-  systemMessage: string
-  responseStyle: number
-  showPreview: boolean
-  onNameChange: (name: string) => void
-  onDescriptionChange: (description: string) => void
-  onSystemMessageChange: (systemMessage: string) => void
-  onResponseStyleChange: (responseStyle: number) => void
-  onTogglePreview: (showPreview: boolean) => void
-  onAddExampleMarkdown: () => void
+  name: string;
+  description: string;
+  systemMessage: string;
+  responseStyle: number;
+  showPreview: boolean;
+  onNameChange: (name: string) => void;
+  onDescriptionChange: (description: string) => void;
+  onSystemMessageChange: (systemMessage: string) => void;
+  onResponseStyleChange: (responseStyle: number) => void;
+  onTogglePreview: (showPreview: boolean) => void;
+  onAddExampleMarkdown: () => void;
 }
 
 export function AgentDetailsForm({
@@ -31,30 +31,33 @@ export function AgentDetailsForm({
   onTogglePreview,
   onAddExampleMarkdown,
 }: AgentDetailsFormProps) {
-  const sliderRef = useRef<HTMLInputElement>(null)
+  const sliderRef = useRef<HTMLInputElement>(null);
 
   // Update slider background when value changes
   useEffect(() => {
-    updateSliderBackground()
-  }, [responseStyle])
+    updateSliderBackground();
+  }, [responseStyle]);
 
   // Function to update the slider's background
   const updateSliderBackground = () => {
     if (sliderRef.current) {
-      const value = Number(responseStyle)
-      const percentage = (value / 100) * 100
+      const value = Number(responseStyle);
+      const percentage = (value / 100) * 100;
 
       // Create gradient background that shows progress
-      sliderRef.current.style.background = `linear-gradient(to right, #3b82f6 0%, #4afa9a ${percentage}%, #111827 ${percentage}%, #111827 100%)`
+      sliderRef.current.style.background = `linear-gradient(to right, #3b82f6 0%, #4afa9a ${percentage}%, #111827 ${percentage}%, #111827 100%)`;
     }
-  }
+  };
 
   return (
     <div className="space-y-8">
       {/* Name & Description */}
       <div className="space-y-6">
         <div className="space-y-2">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-300"
+          >
             Agent Name
           </label>
           <input
@@ -70,7 +73,10 @@ export function AgentDetailsForm({
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="description" className="block text-sm font-medium text-gray-300">
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-gray-300"
+          >
             Description
           </label>
           <input
@@ -89,17 +95,20 @@ export function AgentDetailsForm({
       {/* Response Style */}
       <div className="bg-gray-800/40 rounded-xl p-6 border border-gray-700/30">
         <div className="flex justify-between items-center mb-4">
-          <label htmlFor="responseStyle" className="block text-sm font-medium text-white">
+          <label
+            htmlFor="responseStyle"
+            className="block text-sm font-medium text-white"
+          >
             Response Style
           </label>
           <span className="text-sm px-4 py-1 rounded-full bg-gray-800 text-gray-300 border border-gray-700/50">
             {responseStyle <= 25
               ? "Very Professional"
               : responseStyle <= 50
-                ? "Professional"
-                : responseStyle <= 75
-                  ? "Balanced"
-                  : "Friendly"}
+              ? "Professional"
+              : responseStyle <= 75
+              ? "Balanced"
+              : "Friendly"}
           </span>
         </div>
         <div className="mt-4 mb-4 px-1">
@@ -130,7 +139,10 @@ export function AgentDetailsForm({
       {/* Agent Instructions */}
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <label htmlFor="systemMessage" className="block text-sm font-medium text-white">
+          <label
+            htmlFor="systemMessage"
+            className="block text-sm font-medium text-white"
+          >
             Agent Instructions
           </label>
           <div className="flex items-center space-x-3">
@@ -156,7 +168,9 @@ export function AgentDetailsForm({
             <button
               type="button"
               className={`flex-1 px-4 py-2 text-sm transition-colors duration-200 ${
-                !showPreview ? "bg-gray-700/50 text-white" : "text-gray-400 hover:text-gray-300"
+                !showPreview
+                  ? "bg-gray-700/50 text-white"
+                  : "text-gray-400 hover:text-gray-300"
               }`}
               onClick={() => onTogglePreview(false)}
             >
@@ -165,7 +179,9 @@ export function AgentDetailsForm({
             <button
               type="button"
               className={`flex-1 px-4 py-2 text-sm transition-colors duration-200 ${
-                showPreview ? "bg-gray-700/50 text-white" : "text-gray-400 hover:text-gray-300"
+                showPreview
+                  ? "bg-gray-700/50 text-white"
+                  : "text-gray-400 hover:text-gray-300"
               }`}
               onClick={() => onTogglePreview(true)}
             >
@@ -182,7 +198,9 @@ export function AgentDetailsForm({
                   </article>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[200px] text-center">
-                    <div className="text-gray-500 italic mb-2">No content to preview</div>
+                    <div className="text-gray-500 italic mb-2">
+                      No content to preview
+                    </div>
                     <div className="text-xs text-gray-600">
                       Write some markdown in the editor to see it rendered here
                     </div>
@@ -204,10 +222,10 @@ export function AgentDetailsForm({
           </div>
         </div>
         <p className="text-xs text-gray-400">
-          Define how your agent should behave, what knowledge it should have, and how it should respond.
+          Define how your agent should behave, what knowledge it should have,
+          and how it should respond.
         </p>
       </div>
     </div>
-  )
+  );
 }
-

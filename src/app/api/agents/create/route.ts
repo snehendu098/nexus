@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { Agent } from "@/models/agent.model";
 import { dbConnect } from "@/lib/db";
 import { ApiResponse } from "@/interfaces";
+import { Account } from "@aptos-labs/ts-sdk";
 
 interface AgentCreateRequest {
   displayName: string;
   description: string;
   instructions: string;
-  privateKey: string;
   tools: number[];
   ownerWallet: string;
 }
@@ -22,7 +22,6 @@ export async function POST(req: Request) {
       "displayName",
       "description",
       "instructions",
-      "privateKey",
       "ownerWallet",
     ];
     for (const field of requiredFields) {
@@ -37,11 +36,13 @@ export async function POST(req: Request) {
       }
     }
 
+    const account = Account.generate();
+
     const newAgent = new Agent({
       displayName: agentData.displayName,
       description: agentData.description,
       instructions: agentData.instructions,
-      privateKey: agentData.privateKey,
+      privateKey: account.privateKey.toString(),
       tools: agentData.tools || [],
       ownerWallet: agentData.ownerWallet,
     });

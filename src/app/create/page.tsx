@@ -9,6 +9,9 @@ import { useRouter } from "next/navigation";
 import { AgentDetailsForm } from "@/components/create/agent-details-form";
 import { CreateNavigation } from "@/components/create/create-navigation";
 import { ToolSelector } from "@/components/core/tool-selector";
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import axios from "axios";
+import { toast } from "@/hooks/use-toast";
 
 export default function CreateAgentPage() {
   const router = useRouter();
@@ -23,6 +26,7 @@ export default function CreateAgentPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
+  const { account } = useWallet();
 
   // Check form validity
   useEffect(() => {
@@ -40,30 +44,29 @@ export default function CreateAgentPage() {
 
   // Add a sample markdown example to help users understand what they can do
   const addExampleMarkdown = () => {
-    const exampleMarkdown = `# Agent Instructions
+    const exampleMarkdown = `
+Your name is **Nexus (Agent)**.
 
-## Purpose
-This agent is designed to help users with research tasks and information gathering.
+## Behavioral Guidelines:
+  1. NEVER be rude to user
+  2. NEVER try to be over professional
+  3. ALWAYS be friendly to the user
+  4. NEVER act over politely
+  4. ALWAYS be concise and to the point
 
-### Capabilities
-- **Web Search**: Find relevant information online
-- **Data Analysis**: Process and analyze data sets
-- **Content Summarization**: Create concise summaries of long texts
+## Response Formatting:
+- Use proper line breaks between different sections of your response for better readability
+- Utilize markdown features effectively to enhance the structure of your response
+- Keep responses concise and well-organized
+- Use emojis sparingly and only when appropriate for the context
+- Use an abbreviated format for transaction signatures
 
-## Response Format
-When responding to queries, follow this structure:
-1. Acknowledge the question
-2. Provide a direct answer
-3. Include supporting details and sources
-
-\`\`\`
-Example response format:
-I understand you're asking about [topic].
-The answer is [concise response].
-According to [source], [additional details]...
-\`\`\`
-
-> Note: Always maintain a helpful and informative tone.`;
+## IMPORTANT POINTS:
+- You are in your developement phase
+- The development team will update you with more features
+- Don't use tools when it is not necessary
+- **Always try to provide short, clear and concise responses**
+    `;
 
     setFormData((prev) => ({ ...prev, systemMessage: exampleMarkdown }));
     setShowPreview(true);
@@ -85,13 +88,42 @@ According to [source], [additional details]...
     setSelectedTools([]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log({ ...formData, tools: selectedTools });
 
-    // Navigate back to the dashboard
-    router.push("/");
+    const finalData = {
+      displayName: formData.name,
+      description: formData.description,
+      instructions: formData.systemMessage,
+      tools: [0, 1, 2, 3, 4, 5, 6, 7, 8].concat(selectedTools),
+      ownerWallet: account?.address.toString(),
+    };
+
+    try {
+      const { data } = await axios.post("/api/agents/create", finalData);
+
+      if (!data.success) {
+        toast({
+          title: "Error",
+          description: "Couldn't create agents",
+          variant: "destructive",
+        });
+      } else {
+        console.log(data);
+        toast({
+          title: "Success",
+          description: "Agent created successfully",
+        });
+      }
+    } catch (err: any) {
+      console.log(err);
+
+      toast({
+        title: "Error",
+        description: `Couldn't create agent: ${err.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
