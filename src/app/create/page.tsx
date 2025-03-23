@@ -19,7 +19,7 @@ export default function CreateAgentPage() {
     name: "",
     description: "",
     systemMessage: "",
-    responseStyle: 50, // Default to middle/balanced
+    responseStyle: 50,
   });
   const [selectedTools, setSelectedTools] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState("details");

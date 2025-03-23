@@ -9,7 +9,7 @@ export interface IChat extends Document {
   type: ChatType;
 }
 
-const ChatSchema: Schema = new Schema(
+const ChatSchema = new Schema<IChat>(
   {
     agentInstance: {
       type: Schema.Types.ObjectId,
@@ -35,4 +35,6 @@ const ChatSchema: Schema = new Schema(
   }
 );
 
-export const Chat = mongoose.model<IChat>("Chat", ChatSchema);
+const Chat = mongoose.models.Chat || mongoose.model<IChat>("Chat", ChatSchema);
+
+export { Chat };

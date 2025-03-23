@@ -11,15 +11,11 @@ interface AgentParams {
   id: string;
 }
 
-export async function GET(
-  req: Request,
-  _: Response,
-  { params }: { params: AgentParams }
-) {
+export async function GET(req: Request, { params }: { params: AgentParams }) {
   try {
     await dbConnect();
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate that the ID is a valid MongoDB ObjectId
     if (!isValidObjectId(id)) {
@@ -63,9 +59,9 @@ export async function GET(
     // Find all chats for this agent and sort by timestamp
     const chats = await Chat.find({ agentInstance: id }).sort({ createdAt: 1 });
 
-    const response: ApiResponse<typeof chats> = {
+    const response: ApiResponse<any> = {
       success: true,
-      data: chats,
+      data: { chats, agent },
       message: `${chats.length} chats found for the specified agent`,
     };
 
@@ -82,15 +78,11 @@ export async function GET(
   }
 }
 
-export async function POST(
-  req: Request,
-  _: Response,
-  { params }: { params: AgentParams }
-) {
+export async function POST(req: Request, { params }: { params: AgentParams }) {
   try {
     await dbConnect();
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate that the ID is a valid MongoDB ObjectId
     if (!isValidObjectId(id)) {

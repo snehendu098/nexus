@@ -6,10 +6,12 @@ import { GridBackground } from "@/components/core/grid-background";
 import { Settings, Send } from "lucide-react";
 import Link from "next/link";
 import { NexusAvatar } from "@/components/core/nexus-avatar";
-import { useParams } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
+import axios from "axios";
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
 
 // Sample agent data - in a real app, you would fetch this from an API
-const agentData: any = {
+const agentDat: any = {
   "1": {
     name: "Research Assistant",
     description:
@@ -37,29 +39,54 @@ type Message = {
 export default function AgentChatPage() {
   const params = useParams();
   const agentId = params.id as string;
-  const agent = agentData[agentId] || {
+  const agent = agentDat[agentId] || {
     name: "Nexus AI",
     description: "AI Assistant",
   };
 
+  const [agentData, setAgentData] = useState<any>({});
   const [messages, setMessages] = useState<Message[]>([]);
+  const [runtimeMessage, setRuntimeMessage] = useState<string>("");
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Simulate initial welcome message
+  const { account } = useWallet();
+
+  async function fetchChatsForAgent() {
+    try {
+      if (account?.address.toString()) {
+        const { data } = await axios.get(
+          `/api/chats/${agentId}?ownerWallet=${account?.address.toString()}`
+        );
+
+        if (data.success) {
+          console.log(data);
+          setAgentData(data.data.agent);
+          setMessages(data.data.chats);
+        } else {
+          redirect("/");
+        }
+      } else {
+        redirect("/");
+      }
+    } catch (err) {
+      console.log(err);
+      redirect("/");
+    }
+  }
+
   useEffect(() => {
+    fetchChatsForAgent();
     setMounted(true);
   }, []);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Auto-resize textarea as content grows
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = "24px";

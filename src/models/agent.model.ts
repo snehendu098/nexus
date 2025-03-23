@@ -9,7 +9,7 @@ export interface IAgent extends Document {
   ownerWallet: string;
 }
 
-const AgentSchema: Schema = new Schema(
+const AgentSchema = new Schema<IAgent>(
   {
     displayName: {
       type: String,
@@ -41,4 +41,5 @@ const AgentSchema: Schema = new Schema(
   }
 );
 
-export const Agent = mongoose.model<IAgent>("Agent", AgentSchema);
+export const Agent =
+  mongoose.models.Agent || mongoose.model<IAgent>("Agent", AgentSchema);
