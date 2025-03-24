@@ -3,6 +3,7 @@ import { Agent } from "@/models/agent.model";
 import { dbConnect } from "@/lib/db";
 import { ApiResponse } from "@/interfaces";
 import { Account } from "@aptos-labs/ts-sdk";
+import { aptos } from "@/utils/constants";
 
 interface AgentCreateRequest {
   displayName: string;
@@ -37,6 +38,11 @@ export async function POST(req: Request) {
     }
 
     const account = Account.generate();
+
+    // await aptos.fundAccount({
+    //   accountAddress: account.accountAddress,
+    //   amount: 0.01,
+    // });
 
     const newAgent = new Agent({
       displayName: agentData.displayName,

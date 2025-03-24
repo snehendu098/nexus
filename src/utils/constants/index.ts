@@ -5,8 +5,8 @@ export const aptosConfig = new AptosConfig({
   network: Network.TESTNET,
 });
 
-export const demoAcc = Account.generate();
 export const aptos = new Aptos(aptosConfig);
+export const demoAcc = Account.generate();
 const tempSigner = new LocalSigner(demoAcc, Network.TESTNET);
 const tempAptosAgent = new AgentRuntime(tempSigner, aptos);
 

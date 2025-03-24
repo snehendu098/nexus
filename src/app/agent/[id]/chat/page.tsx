@@ -9,53 +9,35 @@ import { NexusAvatar } from "@/components/core/nexus-avatar";
 import { redirect, useParams } from "next/navigation";
 import axios from "axios";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-
-// Sample agent data - in a real app, you would fetch this from an API
-const agentDat: any = {
-  "1": {
-    name: "Research Assistant",
-    description:
-      "Helps with research tasks, finding information, and summarizing content.",
-  },
-  "2": {
-    name: "Code Helper",
-    description:
-      "Assists with coding problems, debugging, and providing code examples.",
-  },
-  "3": {
-    name: "Content Writer",
-    description:
-      "Creates and edits various types of content based on your requirements.",
-  },
-};
+import ChatLoading from "./loading";
+import { reactiveAgent } from "@/utils/agent";
+import { HumanMessage } from "@langchain/core/messages";
+import ReactMarkdown from "react-markdown";
 
 type Message = {
-  id: string;
-  content: string;
-  sender: "user" | "ai";
-  timestamp: Date;
+  _id: string;
+  message: string;
+  type: "user" | "ai";
 };
 
 export default function AgentChatPage() {
   const params = useParams();
   const agentId = params.id as string;
-  const agent = agentDat[agentId] || {
-    name: "Nexus AI",
-    description: "AI Assistant",
-  };
 
   const [agentData, setAgentData] = useState<any>({});
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [runtimeMessage, setRuntimeMessage] = useState<string>("");
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const { account } = useWallet();
 
   async function fetchChatsForAgent() {
+    setLoading(true);
     try {
       if (account?.address.toString()) {
         const { data } = await axios.get(
@@ -75,6 +57,8 @@ export default function AgentChatPage() {
     } catch (err) {
       console.log(err);
       redirect("/");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -94,35 +78,50 @@ export default function AgentChatPage() {
     }
   }, [inputValue]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputValue,
-      sender: "user",
-      timestamp: new Date(),
+    console.log("agent", agentData);
+    const agent = await reactiveAgent(agentData);
+    console.log("agent");
+
+    const userMessage = {
+      message: inputValue,
+      type: "user",
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate AI response after a delay
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `I'm ${
-          agent.name
-        }, your AI assistant. I'm here to help with ${agent.description.toLowerCase()} How can I assist you today?`,
-        sender: "ai",
-        timestamp: new Date(),
-      };
+    const stream = await agent.stream(
+      {
+        messages: [new HumanMessage(inputValue)],
+      },
+      {
+        configurable: {
+          thread_id: agentData._id,
+        },
+      }
+    );
 
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1500);
+    for await (const chunk of stream) {
+      if ("agent" in chunk) {
+        if (typeof chunk.agent.messages[0].content === "string") {
+          const aiMessage: Message = {
+            _id: (Date.now() + 1).toString(),
+            message: chunk.agent.messages[0].content as string,
+            type: "ai",
+          };
+
+          setMessages((prev) => [...prev, aiMessage]);
+          setIsTyping(false);
+          setRuntimeMessage("");
+        } else {
+          setRuntimeMessage(chunk.agent.messages[0].content[0].text);
+        }
+      }
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -132,7 +131,7 @@ export default function AgentChatPage() {
     }
   };
 
-  return (
+  return !loading ? (
     <div className="min-h-screen h-screen bg-black text-white flex flex-col relative overflow-hidden">
       {/* Grid Background with increased opacity */}
       <div className="absolute inset-0 z-0 opacity-70">
@@ -170,13 +169,17 @@ export default function AgentChatPage() {
               <div className="w-8 h-8 rounded-md bg-green-400 flex items-center justify-center">
                 <span className="text-black font-bold">N</span>
               </div>
-              <span className="font-medium text-green-400">{agent.name}</span>
+              <span className="font-medium text-green-400">
+                {agentData.displayName || "Nexus"}
+              </span>
             </div>
           </div>
 
-          <button className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-800/70 hover:bg-gray-700/70 transition-colors">
-            <Settings size={16} className="text-gray-400" />
-          </button>
+          <Link href={`/${agentId}`}>
+            <button className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-800/70 hover:bg-gray-700/70 transition-colors">
+              <Settings size={16} className="text-gray-400" />
+            </button>
+          </Link>
         </div>
       </header>
 
@@ -195,38 +198,34 @@ export default function AgentChatPage() {
               Can I help you with anything?
             </h1>
             <p className="text-gray-400 text-center max-w-md text-sm">
-              I'm {agent.name}. {agent.description} Let's get started!
+              I'm {agentData.displayName}. Let's get started!
             </p>
           </div>
         ) : (
           <div className="flex-grow overflow-y-auto custom-scrollbar h-full w-full">
             <div className="max-w-5xl mx-auto px-4 w-full">
               <div className="space-y-6 pb-4">
-                {messages.map((message) => (
+                {messages.map((message, idx) => (
                   <div
-                    key={message.id}
+                    key={idx}
                     className={`flex ${
-                      message.sender === "user"
-                        ? "justify-end"
-                        : "justify-start"
+                      message.type === "user" ? "justify-end" : "justify-start"
                     }`}
                   >
                     <div
-                      className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 backdrop-blur-sm ${
-                        message.sender === "user"
+                      className={`max-w-[85%] prose prose-invert prose-sm md:max-w-[70%] rounded-2xl px-4 py-3 backdrop-blur-sm ${
+                        message.type === "user"
                           ? "bg-green-400/5 text-white border border-green-400/10"
                           : "bg-gray-900/40 border border-gray-800/30"
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">
-                        {message.content}
-                      </p>
+                      <ReactMarkdown>{message.message}</ReactMarkdown>
                     </div>
                   </div>
                 ))}
 
                 {isTyping && (
-                  <div className="flex justify-start">
+                  <div className="flex justify-start items-center">
                     <div className="max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 bg-gray-900/40 backdrop-blur-sm border border-gray-800/30">
                       <div className="flex space-x-1">
                         <div
@@ -243,6 +242,9 @@ export default function AgentChatPage() {
                         ></div>
                       </div>
                     </div>
+                    <p className="ml-2 text-xs text-white/60 animate-pulse">
+                      {runtimeMessage}
+                    </p>
                   </div>
                 )}
 
@@ -291,5 +293,7 @@ export default function AgentChatPage() {
         </div>
       </div>
     </div>
+  ) : (
+    <ChatLoading />
   );
 }

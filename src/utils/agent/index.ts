@@ -1,14 +1,59 @@
-import { Account, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
+import { Account, Ed25519PrivateKey, Network } from "@aptos-labs/ts-sdk";
 import { AgentRuntime, createAptosTools, LocalSigner } from "move-agent-kit";
+import { aptos } from "../constants";
+import { ChatAnthropic } from "@langchain/anthropic";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { createCheckPoiner } from "@/helpers/checkpointer";
+import { MemorySaver } from "@langchain/langgraph-checkpoint";
 
-const aptosConfig = new AptosConfig({
-  network: Network.TESTNET,
-});
+const account = Account.generate();
 
-const aptos = new Aptos(aptosConfig);
+interface IRuntime {
+  privateKey: string;
+  instruction: string;
+  tools: number[];
+}
 
-const tempAcc = Account.generate();
-const signer = new LocalSigner(tempAcc, Network.TESTNET);
-const aptosAgent = new AgentRuntime(signer, aptos);
+export const agentInit = async (item: IRuntime) => {
+  // const account = await aptos.deriveAccountFromPrivateKey({
+  //   privateKey: new Ed25519PrivateKey(item.privateKey),
+  // });
 
-const tools = createAptosTools(aptosAgent);
+  const signer = new LocalSigner(account, Network.TESTNET);
+
+  const agent = new AgentRuntime(signer, aptos);
+
+  return agent;
+};
+
+export const reactiveAgent = async (item: IRuntime) => {
+  console.log(item);
+  const aptosAgent = await agentInit(item);
+
+  const tools = createAptosTools(aptosAgent).filter((_, idx) =>
+    item.tools.includes(idx)
+  );
+
+  const llm = new ChatAnthropic({
+    temperature: 0.7,
+    model: "claude-3-5-sonnet-20241022",
+    apiKey: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY!,
+  });
+
+  // const checkpointSaver = await createCheckPoiner();
+  const checkpointSaver = new MemorySaver();
+
+  const agent = createReactAgent({
+    llm,
+    tools,
+    checkpointSaver,
+    messageModifier: `
+  ${item.instruction}
+
+  Available Tools:
+  ${tools.map((tool) => `${tool.name} - ${tool.description}`).join(", ")}
+  `,
+  });
+
+  return agent;
+};
